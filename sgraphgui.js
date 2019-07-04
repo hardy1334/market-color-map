@@ -433,12 +433,10 @@ function sgraphgui() {
                     let show = localStorage.getItem("sg_params_window" + i + "_show");
                     if (show)
                         m_showParamWindow[i - 1] = (show === "show") ? true : false;
-                    if (x && y) {
-                        let xNum = parseFloat(x, 10);
-                        let yNum = parseFloat(y, 10);
-                        if (xNum && yNum) {
-                            setParamsWindowPos(params, xNum, xNum);
-                        }
+                    let xNum = parseFloat(x, 10);
+                    let yNum = parseFloat(y, 10);
+                    if (!isNaN(xNum) && !isNaN(yNum)) {
+                        setParamsWindowPos(params, xNum, yNum);
                     }
                     if (z) {
                         params.style.zIndex = z;
@@ -578,8 +576,8 @@ function sgraphgui() {
                 z = parseInt(params.style.zIndex);
                 if (rect && rect.width != 0 && rect.height != 0) {
                     setParamsWindowPos(params, params.offsetLeft, params.offsetTop);
-                    localStorage.setItem("sg_params_window" + ind + "_x", params.offsetLeft.toString);
-                    localStorage.setItem("sg_params_window" + ind + "_y", params.offsetTop.toString);
+                    localStorage.setItem("sg_params_window" + ind + "_x", params.offsetLeft.toString());
+                    localStorage.setItem("sg_params_window" + ind + "_y", params.offsetTop.toString());
                 }
                 localStorage.setItem("sg_params_window" + ind + "_show", (m_showParamWindow[ind - 1] === true) ? "show" : "hide");
             }
