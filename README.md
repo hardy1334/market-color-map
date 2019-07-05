@@ -6,3 +6,7 @@ Select csv file with historical Open, High, Low, Close data (as example you can 
 SGraph calculates correlation and potential profit (for one market share) by using correlation, historical data and the following strategy: Set "sell limit" every morning to "Price at Open" x "Calculated recommendation".
 
 The X, Y color of colormap calculated on the basis of Time (X) and time difference between correlation intervals (Y).
+
+These screen shots show Correlation colormap and graphic (caculate on the bases of the maximum correlation).
+
+![Correlation colormap](/Test.png?raw=true)
