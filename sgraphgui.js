@@ -130,6 +130,14 @@ function sgraphgui() {
         document.addEventListener(m_mousedownEvent, processWindowOnClick, false);
         // setup dynamic favicon
         drawFavicon();
+
+        if (localStorage && m_sgraph) {
+            let strHistData = localStorage.getItem("sg_historical_data");
+            if (strHistData) {
+                m_sgraph.histDataToTable(strHistData);
+                showSGraph();
+            }
+        }
     }
     function getMouseX(e) {
         return (m_TouchScreen && e.touches) ? e.touches[0].clientX : e.clientX;
@@ -764,7 +772,7 @@ function sgraphgui() {
     function handleFile(files) {
         if (m_sgraph && files && files.length > 0) {
             document.getElementById("sg_filename").innerText = files[0].name;
-            m_sgraph.loadData(files);
+            m_sgraph.loadData(files[0]);
         }
     }
     function showVisibleParamsWindows() {
