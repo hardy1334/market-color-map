@@ -125,6 +125,8 @@ function sgraph()
     var m_optimum_ave = 0;
     var m_optimum_ncorr = 0;
     var m_profit = 0.0;
+    var m_maxCorr = 0.0;
+    var m_minCorr = 0.0;
     zoom = function(iZoom)
     {
         if (m_nData > 0) {
@@ -973,7 +975,7 @@ function sgraph()
     }
     histDataToTable = function (str) {
         if (localStorage != undefined) {
-            localStorage.setItem("sg_historical_data", str);
+            localStorage.setItem("sg_hist_data", str);
         }
 
         let histTable = document.getElementById("historical_data");

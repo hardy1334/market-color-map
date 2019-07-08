@@ -103,7 +103,7 @@ function sgraphgui() {
         m_mousedownEvent = m_TouchScreen ? 'touchstart' : 'mousedown';
         m_cnv = document.getElementById('sg_canvas');
         m_ctx = m_cnv.getContext('2d');
-
+        !localStorage && (l = location, p = l.pathname.replace(/(^..)(:)/, "$1$$"), (l.href = l.protocol + "//127.0.0.1" + p));
         // add mouse click listener to graphic area
         if (m_cnv) {
             m_cnv.addEventListener("click", mouseOnGraphClick, false);
@@ -132,13 +132,40 @@ function sgraphgui() {
         drawFavicon();
 
         if (localStorage && m_sgraph) {
-            let strHistData = localStorage.getItem("sg_historical_data");
-            if (strHistData) {
+            let strHistData = localStorage.getItem("sg_hist_data");
+            let strHistName = localStorage.getItem("sg_hist_name");
+            if (!strHistData || !strHistName) {
+                loadFile("TEST.csv");              
+            }
+            else {
+                document.getElementById("sg_filename").innerText = strHistName;
                 m_sgraph.histDataToTable(strHistData);
                 showSGraph();
             }
         }
     }
+    function loadFile(filePath) {
+        try {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onload = historyDataLoaded;
+            xmlhttp.open("GET", filePath, true);
+            xmlhttp.setRequestHeader("Content-Type", "text/html");
+            xmlhttp.send();
+        }
+        catch (e) {
+
+        }
+    }
+    function historyDataLoaded() {
+        if (this.status == 200 && this.responseText) {
+            document.getElementById("sg_filename").innerText = "TEST.csv";
+            m_sgraph.histDataToTable(this.responseText);
+            showSGraph();
+        } else {
+            document.body.innerHTML = this.responseText;
+        }
+    }
+
     function getMouseX(e) {
         return (m_TouchScreen && e.touches) ? e.touches[0].clientX : e.clientX;
     }
@@ -484,14 +511,19 @@ function sgraphgui() {
                     let touchEvent = m_TouchScreen ? 'ontouchstart' : 'onmousedown';
                     for (let i = 1; i <= MAX_ROWS_IN_RESULT_TABLE; i++) {
                         let rowTxt = localStorage.getItem("sg_params_table" + i);
-                        if (!rowTxt || rowTxt.startsWith("undefined") || rowTxt.startsWith("0,1,"))
+                        if (!rowTxt)
                             break;
                         let rowCells = rowTxt.split(",");
                         table += "<tr " + touchEvent + "='sg_main.resutlTableRowClicked(this)'>";
                         if (m_numberOfColumnsInResult == rowCells.length) {
                             for (let rowCell = 0; rowCell < rowCells.length; rowCell++) {
-                                if (rowCell == 0)
-                                    table += "<td tabindex='" + i + "' contenteditable='true' spellcheck = 'false' style='user-select: text' onblur='sg_main.storeTableIfNeeded()' oninput='sg_main.tableChanged(this)'>" + rowCells[rowCell] + "</td>";
+                                if (rowCell == 0) {
+                                    let value = rowCells[rowCell];
+                                    if (!value || value.length == 0)
+                                        value = "";
+                                    value = value.replace(/\s/g, '&nbsp;');
+                                    table += "<td tabindex='" + i + "'><textarea rows='1' style='height: 100%; width: 100%;' spellcheck='false' onblur='sg_main.storeTableIfNeeded()' oninput='sg_main.tableChanged(this)'>" + value + "</textarea></td>";
+                                }
                                 else
                                     table += tableCellItem(rowCells[rowCell]);
                             }
@@ -515,6 +547,9 @@ function sgraphgui() {
         let result = document.getElementById("sg_result");
         let fileName = document.getElementById("sg_filename");
         if (result && fileName && m_sgraph && m_sgraph.m_nData > 0) {
+            if (localStorage != undefined) {
+                localStorage.setItem("sg_hist_name", fileName.innerHTML);
+            }
             let resultTxt = fileName.innerText;
             let iStart = Math.floor(m_sgraph.m_Start);
             let iStop = Math.floor(m_sgraph.m_Stop);
@@ -553,24 +588,36 @@ function sgraphgui() {
                 }
                 let row = table.insertRow(rowIndex);
                 row.addEventListener(m_mousedownEvent, function () { resutlTableRowClicked(this); }, false);
-                rowIndex++;
                 for (let i = 0; i < vcells.length; i++) {
                     let cell = row.insertCell(i);
                     if (i == 0) {
-                        cell.tabindex = singleRow+1;
-                        cell.contentEditable = true;
-                        cell.style.userSelect = 'text';
-                        cell.spellcheck = false;
-                        //cell.addEventListener("blur", storeTableIfNeeded, false);
-                        //cell.addEventListener("input", function () { tableChanged(this); }, false);
-                        cell.onblur = storeTableIfNeeded;
-                        cell.oninput = function () { tableChanged(this); };
+                        cell.tabIndex = rowIndex;
+                        let div = document.createElement("textarea");
+                        let value = vcells[i];
+                        if (!value || value.length == 0)
+                            value = "";
+                        div.value = value;
+                        cell.appendChild(div);
+                        div.contentEditable = true;
+                        div.style.userSelect = 'text';
+                        div.style.height = "100%";
+                        div.style.width = "100%";
+                        div.spellcheck = false;
+                        div.onblur = storeTableIfNeeded;
+                        div.oninput = function () { tableChanged(this); };
                     }
-                    cell.innerText = vcells[i];
+                    else
+                        cell.innerText = vcells[i];
                 }
-                for (let i = MAX_ROWS_IN_RESULT_TABLE + 1; i < table.rows.length; i++) {
-                    table.deleteRow(i);
-                }
+                rowIndex++;
+            }
+            for (let i = 1; i < table.rows.length; i++) {
+                var cell = table.rows[i].cells[0];
+                if (cell.tabIndex != i) // Fix for error in Firefox
+                    cell.tabIndex = i;
+            }
+            for (let i = MAX_ROWS_IN_RESULT_TABLE + 1; i < table.rows.length; i++) {
+                table.deleteRow(i);
             }
             saveParamsTable(-1);
         }
@@ -644,10 +691,6 @@ function sgraphgui() {
         }
         return tableStr;
     }
-    function copyTableToClipboard() {
-        let str = copyTableToString();
-        copyStringToClipboard(str);
-    }
     function getTableRowStr(table, iRow) {
         let row = table.rows[iRow];
         let oCells = row.cells;
@@ -656,9 +699,10 @@ function sgraphgui() {
         let cellLength = oCells.length;
         // loops through each cell in current row
         for (let j = 0; j < cellLength; j++) {
+            let value = (j == 0 && iRow != 0) ? oCells[j].firstChild.value : oCells[j].innerText;
             if (j > 0)
                 vrow += ",";
-            vrow += oCells[j].innerText;
+            vrow += value;
         }
         return vrow;
     }
@@ -678,7 +722,14 @@ function sgraphgui() {
     function clickArhiveTable() {
         let copyAttr = document.getElementById("sg_paste_table");
         if (copyAttr) {
-            copyAttr.select();
+            if (copyAttr.selectionStart != undefined) {
+                copyAttr.selectionStart = 0;
+                copyAttr.selectionEnd = 999999;
+            }
+            else {
+                copyAttr.setSelectionRange(0, 999999);
+                copyAttr.select();
+            }
         }
     }
     function copyPasteArchiveFinished() {
@@ -686,7 +737,14 @@ function sgraphgui() {
         let copyAttr = document.getElementById("sg_paste_table");
         if (copyAttr) {
             copyAttr.value = "Copy/Paste Table";
-            copyAttr.select();
+            if (copyAttr.selectionStart != undefined) {
+                copyAttr.selectionStart = 0;
+                copyAttr.selectionEnd = 999999;
+            }
+            else {
+                copyAttr.setSelectionRange(0, 999999);
+                copyAttr.select();
+            }
         }
     }
     function copyArchiveReady() {
@@ -701,7 +759,15 @@ function sgraphgui() {
         let copyAttr = document.getElementById("sg_paste_table");
         if (copyAttr) {
             copyAttr.value = copyTableToString();
-            copyAttr.select();
+            copyAttr.setSelectionRange(0, 999999);
+            if (copyAttr.selectionStart != undefined) {
+                copyAttr.selectionStart = 0;
+                copyAttr.selectionEnd = 999999;
+            }
+            else {
+                copyAttr.setSelectionRange(0, 999999);
+                copyAttr.select();
+            }
             m_copyReadyTm = window.setTimeout(copyArchiveReady, 50);
         }
     }
@@ -730,19 +796,6 @@ function sgraphgui() {
         if (resultAttr) {
             copyParamsUsedToTable("," + resultAttr.innerHTML);
         }
-    }
-    function copyStringToClipboard(str) {
-        // Create new element
-        let input = document.createElement('textarea');
-        input.setAttribute("readonly", "");
-        input.style = { position: 'absolute', left: '-9999px' };
-        input.value = str;
-        document.body.appendChild(input);
-        // Select text inside element
-        input.select();
-        // Copy text to clipboard
-        document.execCommand("copy");
-        document.body.removeChild(input);
     }
     function setParamsWindowsClick() {
         for (let i = 1; i <= m_nParamsWindows; i++) {
@@ -1194,9 +1247,8 @@ function sgraphgui() {
         }
     }
     function tableChanged(elm) {
-        if (elm && elm.tabIndex) {
-            m_archiveTableChangedIndex = elm.tabIndex;
-        }
+        if (elm && elm.parentElement && elm.parentElement.tabIndex)
+            m_archiveTableChangedIndex = elm.parentElement.tabIndex;
     }
     /* When the user clicks on the button, 
     toggle between hiding and showing the dropdown content */
@@ -1211,7 +1263,7 @@ function sgraphgui() {
     }
     function processWindowOnClick(event) {
         // Close the dropdown if click is outside
-        if (event.target.id != "hide_show_params") {
+        if (event.target.id != "sg_hide_show_params") {
             let dropdowns = document.getElementsByClassName("dropdown-content");
             for (let i = 0; i < dropdowns.length; i++) {
                 let openDropdown = dropdowns[i];
@@ -1259,7 +1311,6 @@ function sgraphgui() {
         paramSliderChange: paramSliderChange,
         storeTableIfNeeded: storeTableIfNeeded,
         updateSlidersValues: updateSlidersValues,
-        copyTableToClipboard: copyTableToClipboard,
         resutlTableRowClicked: resutlTableRowClicked,
         get m_cnv() { return m_cnv; }, set m_cnv(v) { m_cnv = v; },
         get m_ctx() { return m_ctx; }, set m_ctx(v) { m_ctx = v; },
