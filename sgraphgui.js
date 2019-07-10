@@ -147,8 +147,10 @@ function sgraphgui() {
     function stopOptimize(event) {
         let optimizeButton = document.getElementById("sg_optimize");
         let rect = optimizeButton.getBoundingClientRect();
-        if (event.clientX >= rect.left + window.scrollX && event.clientX <= rect.right + window.scrollX &&
-            event.clientY >= rect.top + window.scrollY && event.clientY <= rect.bottom + window.scrollY) {
+        let scrollLeft = window.scrollX || document.body.scrollLeft || 0;
+        let scrollTop = window.scrollY || document.body.scrollTop || 0;
+        if (event.clientX >= rect.left + scrollLeft && event.clientX <= rect.right + scrollLeft &&
+            event.clientY >= rect.top + scrollTop && event.clientY <= rect.bottom + scrollTop) {
             m_sgraph.stopOptimization();
             document.getElementById("sg_disable_all").style.display = 'none';
         }
