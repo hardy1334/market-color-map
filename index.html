@@ -6,7 +6,6 @@
         <link rel="stylesheet"
               type="text/css"
               href="sgraph.css" />
-
         <title>Technical Analysis Price Correlation</title>
         <script src="sgraph.js"></script>
         <script src="sgraphgui.js"></script>
@@ -22,7 +21,8 @@
     </noscript>
 
     <body style="overflow-y:hidden" onload="sg_main.onLoadSetup()" onresize="sg_main.resizeGraph()">
-    <div class="topbuttons">
+    <div id="sg_disable_all" onclick="sg_main.stopOptimize(event)"></div>
+    <div class="sg_topbuttons" id="sg_buttons">
         <input style="position:absolute; z-index:-1; opacity:0;pointer-events:none" type="file" accept=".csv" id="param_data_file" onchange="sg_main.handleFile(this.files)">
         <button class="button button_top" id=""sg_filename_button" onclick="document.querySelector('#param_data_file').click()">
             <xml version="1.0" encoding="UTF-8" standalone="no"></xml>

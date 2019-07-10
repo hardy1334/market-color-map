@@ -1315,6 +1315,11 @@ function sgraph()
                 break;
         }
     }
+    stopOptimization = function () {
+        if (m_optimize != 0) {
+            m_optimize = eStop2ndOptimizationLoop;
+        }
+    }
     startOrStopOptimization = function () {
         if (m_optimize == eNoOptimization) {
             m_optimize = eStart1stOptimizationLoop;
@@ -1353,6 +1358,7 @@ function sgraph()
         orderString: orderString,
         loadData: loadData,
         getPerfomance: getPerfomance,
+        stopOptimization: stopOptimization,
         startOrStopOptimization: startOrStopOptimization,
         m_DateTime: m_DateTime,
         m_data: m_data,

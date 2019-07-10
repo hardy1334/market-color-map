@@ -144,6 +144,15 @@ function sgraphgui() {
             }
         }
     }
+    function stopOptimize(event) {
+        let optimizeButton = document.getElementById("sg_optimize");
+        let rect = optimizeButton.getBoundingClientRect();
+        if (event.clientX >= rect.left + window.scrollX && event.clientX <= rect.right + window.scrollX &&
+            event.clientY >= rect.top + window.scrollY && event.clientY <= rect.bottom + window.scrollY) {
+            m_sgraph.stopOptimization();
+            document.getElementById("sg_disable_all").style.display = 'none';
+        }
+    }
     function loadFile(filePath) {
         try {
             var xmlhttp = new XMLHttpRequest();
@@ -1019,14 +1028,6 @@ function sgraphgui() {
         else
             ind = pid;
         let params = getParamsWindowByInd(ind);
-        /*
-        if (parseInt(params.style.zIndex) != m_zIndexParamsMax && elem.endsWith("_div"))
-            paramsWindowToTop(ind);
-        else {
-            let op = params.style.opacity;
-            params.style.opacity = (!op) ? 0.6 : (op > 0.4) ? op - 0.4 : 1.0;
-        }
-        */
         params.style.display = "none";
         m_showParamWindow[ind - 1] = false;
         saveParamsWindowPos(ind)
@@ -1107,6 +1108,7 @@ function sgraphgui() {
         saveParamsValues();
         document.getElementById("sg_optimize").innerText = "Optimize";
         m_sgraph.processLoadedData();
+        document.getElementById("sg_disable_all").style.display = 'none';
     }
     function getOptimizeRanges() {
         let ind = 0;
@@ -1140,10 +1142,15 @@ function sgraphgui() {
     }
     function onClickedOptimize() {
         if (m_sgraph && m_sgraph.m_nData > 1) {
-            if (m_sgraph.startOrStopOptimization())
+            if (m_sgraph.startOrStopOptimization()) {
                 document.getElementById("sg_optimize").innerText = "Stop Optimization";
-            else
+                document.getElementById("sg_disable_all").style.display = 'block';
+
+            }
+            else {
                 document.getElementById("sg_optimize").innerText = "Optimize";
+                document.getElementById("sg_disable_all").style.display = 'none';
+            }
         }
     }
     function paramSliderChange(indDiv, indRange) {
@@ -1296,6 +1303,7 @@ function sgraphgui() {
         onLoadSetup: onLoadSetup,
         resizeGraph: resizeGraph,
         tableChanged: tableChanged,
+        stopOptimize: stopOptimize,
         showNewSGraph: showNewSGraph,
         copyArhiveTable: copyArhiveTable,
         clickArhiveTable: clickArhiveTable,
