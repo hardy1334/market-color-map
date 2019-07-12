@@ -81,6 +81,7 @@ function sgraph()
     var onOptimizeEnd = null;
     var onDrawEnd = null;
     var m_image = null;
+    var m_imageData = null;
     var m_imageCanvas = null;
     var m_imWidth = 0;
     var m_imHeight = 0;
@@ -648,7 +649,7 @@ function sgraph()
         d = (ih - 1) / d;
         setCorrelationMatrix();
         sg_main.m_ctx.clearRect(0, 0, m_imWidth, m_imHeight);
-        scaleImage(m_image.data, iw, ih, m_image.width, m_image.height, m_Start, m_Stop);
+        scaleImage(m_imageData, iw, ih, m_image.width, m_image.height, m_Start, m_Stop);
 
         sg_main.m_ctx.putImageData(m_imageCanvas, 0, 0);
 
@@ -796,6 +797,7 @@ function sgraph()
     setCorrelationMatrix = function()
     {
         m_image = allocateImage(m_nData, sg_main.MATRIX_Y);
+        m_imageData = m_image.data;
         if (m_Corr.length == 0)
         {
             let nCorr = sg_main.m_CorrLength * 2;
@@ -852,33 +854,72 @@ function sgraph()
         }
         return dOrder;
     }
-    calcCorrelationColormapColumn = function (i0, nCorr, dInitialCorrPos)
-    {
+    function colormap0(i0) {
+        // Set column of colormap to 0
+        let nbpl = 4;
+        let ih = m_image.height;
+        let lw = m_image.width * nbpl;
+        let c = i0 * nbpl;
+        for (let k = 0, mCorrInd = i0; k < ih; k++, mCorrInd += m_nData, c += lw) {
+            m_imageData[c] = 0;
+            m_imageData[c + 1] = 0;
+            m_imageData[c + 2] = 0;
+        }
+    }
+    function colormap(i0, nCorr, i1Min, i1Max, dCorrScale) {
+        // Set column of colormap
         let nbpl = 4;
         let ih = m_image.height;
         let lw = m_image.width*nbpl;
+        let ig = HIGHLIGHT;
+        let c = i0 * nbpl;
+        let i1Start = i0 - nCorr;
+        for (let k = 0, mCorrInd = i0; k < ih; k++, mCorrInd += m_nData, c += lw) {
+            let i1 = i1Start - k;
+            if (i1 >= i1Min && i1 <= i1Max) {
+                let ir;
+                let ib;
+                let corrToDraw = m_Corr[mCorrInd - 1];
+                let ccorr = (corrToDraw - m_minCorr) * dCorrScale;
+                if (ccorr > 0.5) {
+                    let rr = (ccorr - 0.5) * 510 + HIGHLIGHT;
+                    ir = rr > 255.0 ? 255 : Math.floor(rr);
+                    ib = 0;
+                }
+                else {
+                    let bb = (0.5 - ccorr) * 510 + HIGHLIGHT;
+                    ib = (bb > 255.0) ? 255 : Math.floor(bb);
+                    ir = 0;
+                }
+                m_imageData[c] = ir;
+                m_imageData[c + 1] = ig;
+                m_imageData[c + 2] = ib;
+            }
+            else {
+                m_imageData[c] = 0;
+                m_imageData[c + 1] = 0;
+                m_imageData[c + 2] = 0;
+            }
+        }
+    }
+    calcCorrelationColormapColumn = function (i0, nCorr, dInitialCorrPos)
+    {
         let index = i0 * NDATA;
         m_data[index + INDEX_ORDER] = 0.0;
         m_data[index + INDEX_MAX_CORR] = 0.0;
         m_data[index + INDEX_MAX_CORR_DT] = 0.0;
 
-        let dCorrMax = -999999.0;
-        let iCorrMax = -1;
         let iXShift = 0;
-        let c = i0 * nbpl;
         if (i0 <= nCorr - 1 - iXShift || i0 >= m_nData - iXShift) {
-            for (let k = 0, mCorrInd = i0; k < ih; k++, mCorrInd += m_nData, c += lw) {
-                m_image.data[c] = 0;
-                m_image.data[c + 1] = 0;
-                m_image.data[c + 2] = 0;
-            }
+            colormap0(i0, nCorr);
             return 0.0;
         }
+        let dCorrMax = -999999.0;
+        let iCorrMax = -1;
         let dCorrScale = (m_maxCorr - m_minCorr) > 0.0 ? 1.0 / (m_maxCorr - m_minCorr) : 0.0;
         let i1Start = i0 - nCorr;
         let i1Min = nCorr - iXShift;
         let i1Max = m_nData - iXShift - 1;
-        let ig = HIGHLIGHT;
         let kCorrMax = -1;
         
         let sOrder = 0.0;
@@ -888,31 +929,11 @@ function sgraph()
             dMaxCorr = 1.0 / dMaxCorr;
         let yCorr = 0.0;
         let dOrder = 0.0;
+        let ih = m_image.height;
         for (let k = 0, iCorrInd = i0; k < ih; k++, iCorrInd += m_nData) {
             let ind = i1Start - k;
             if (ind >= i1Min && ind <= i1Max) {
-
                 let corr = m_Corr[iCorrInd - 1];
-                /*
-                let indn = ind * NDATA;
-                indn += NDATA;
-                dOrder = m_data[indn + INDEX_HIGH] - m_data[indn + INDEX_OPEN];
-                dOrder -= sg_main.m_Spread;
-                if (dOrder > 0.0) {
-                    dOrder = (m_data[indn + INDEX_OPEN] > 0.0) ? 1.0 / m_data[indn + INDEX_OPEN] : 0.0;
-                    if (m_maxCorr > m_minCorr) {
-                        let dCorr = (corr - m_minCorr) * dMaxCorr;
-                        //dCorr *= dCorr;
-                        dOrder = dOrder * dCorr * dCorr;
-                        sOrder += dOrder;
-                        sCorr += dCorr;
-                        yCorr += k * dCorr;
-                    }
-                }
-                else
-                    dOrder = 0.0;
-                */
-                
                 if (corr > dCorrMax) {
                     dCorrMax = corr;
                     kCorrMax = k;
@@ -921,11 +942,7 @@ function sgraph()
             }
         }
         if (kCorrMax < 0) {
-            for (let k = 0, mCorrInd = i0; k < ih; k++, mCorrInd += m_nData, c += lw) {
-                m_image.data[c] = 0;
-                m_image.data[c + 1] = 0;
-                m_image.data[c + 2] = 0;
-            }
+            colormap0(i0);
             return 0.0;
         }
 
@@ -933,39 +950,7 @@ function sgraph()
             m_prevMaxCorrPos = kCorrMax;
             m_prevMaxCorr = dCorrMax;
         }
-
-        for (let k = 0, mCorrInd = i0; k < ih; k++, mCorrInd += m_nData, c += lw)
-        {
-            let i1 = i1Start - k;
-            if (i1 >= i1Min && i1 <= i1Max)
-            {
-                let ir;
-                let ib;
-                let corrToDraw = m_Corr[mCorrInd - 1];
-                let ccorr = (corrToDraw - m_minCorr) * dCorrScale;
-                if (ccorr > 0.5)
-                {
-                    let rr = (ccorr - 0.5) * 510 + HIGHLIGHT;
-                    ir = rr > 255.0 ? 255 : Math.floor(rr);
-                    ib = 0;
-                }
-                else
-                {
-                    let bb = (0.5 - ccorr) * 510 + HIGHLIGHT;
-                    ib = (bb > 255.0) ? 255 : Math.floor(bb);
-                    ir = 0;
-                }
-                m_image.data[c] = ir;
-                m_image.data[c+1] = ig;
-                m_image.data[c+2] = ib;
-            }
-            else
-            {
-                m_image.data[c] = 0;
-                m_image.data[c + 1] = 0;
-                m_image.data[c + 2] = 0;
-            }
-        }
+        colormap(i0, nCorr, i1Min, i1Max, dCorrScale);
         dOrder = getOrder(dCorrMax, i0, nCorr, kCorrMax);
         m_data[index + INDEX_ORDER] = dOrder;
         m_data[index + INDEX_MAX_CORR] = dCorrMax;
