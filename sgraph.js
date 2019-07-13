@@ -1,4 +1,4 @@
-// SGraph - Create bitmap with correlation colormap and optional graphics
+// SGraph - Create bitmap with autocorrelation colormap and optional graphics
 /*
 Copyright (c) 2019, Leonid M Tertitski (Leonid.M.Tertitski@gmail.com)
 All rights reserved.
