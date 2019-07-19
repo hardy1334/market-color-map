@@ -10,6 +10,6 @@ SGraph calculates autocorrelation and potential profit (for one market share) by
 
 The X, Y color of colormap calculated on the basis of Time (X) and time difference between correlation intervals (Y). Red color - "good" correlation, Blue - "bad".
 
-The folllowing screen shot show autocorrelation colormap and graphic of profit (caculate on the bases of the maximum correlation).
+The folllowing screen shot show autocorrelation colormap and graphic of profit (caculated on the bases of the maximum correlation).
 
 ![Correlation colormap](/Market-Colormap.png?raw=true)
