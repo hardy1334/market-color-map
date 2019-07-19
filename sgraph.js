@@ -118,8 +118,6 @@ function sgraph()
     var m_dMinPr = 0.0;
     var m_dMaxPr = 0.0;
 
-    var m_prevMaxCorr = 0.0;
-    var m_prevMaxCorrPos = -1;
     var m_optimizeTimeout = 0;
     var m_optimum_PredScale = 0;
     var m_optimum_MaxLost = 0;
@@ -195,7 +193,7 @@ function sgraph()
         sg_main.m_ctx.lineTo(ix1, m_imHeight - 1 - iy1);
         sg_main.m_ctx.stroke();
     }
-    calculateSumXY = function(iShift)
+    calculateSumXY = function(iShift, nCorr)
     {
         // Calculate Sum(X*Y)
         let s2 = 0.0;
@@ -211,7 +209,7 @@ function sgraph()
             x1 -= m_data[indx + INDEX_AVERAGE];
             y1 -= m_data[indy + INDEX_AVERAGE];
             s2 += x1*y1;
-            m_dataCorr[j] = s2;
+            m_dataCorr[j] = s2 * nCorr;
         }
     }
     calculateCorrelation = function(j, nCorr)
@@ -219,7 +217,7 @@ function sgraph()
         let iCorr = j * m_nData;
         let iShift = j+nCorr;
     
-        calculateSumXY(iShift);
+        calculateSumXY(iShift, nCorr);
 
         let indCorr = iShift+nCorr+1;
         if (indCorr < m_nData)
@@ -236,14 +234,14 @@ function sgraph()
         let indys = indy - nCorr * N_C;
         for (let i = indCorr; i < m_nData; i++, indx += N_C, indy += N_C, indxs += N_C, indys += N_C)
         {
-            let a = nCorr *(m_dataCorr[indx+2] - m_dataCorr[indxs+2]);
+            let a = m_dataCorr[indx+2] - m_dataCorr[indxs+2];
             let bx = m_dataCorr[indx] - m_dataCorr[indxs];
             let by = m_dataCorr[indy] - m_dataCorr[indys];
             let b = bx * by;
-            let cxx = nCorr *(m_dataCorr[indx+1] - m_dataCorr[indxs+1]);
+            let cxx = m_dataCorr[indx+1] - m_dataCorr[indxs+1];
             let cx = bx * bx ;
             let cc = cxx - cx;
-            let dyy = nCorr *(m_dataCorr[indy+1] - m_dataCorr[indys+1]);
+            let dyy = m_dataCorr[indy+1] - m_dataCorr[indys+1];
             let dy = by * by ;
             let dd = dyy - dy;
             let ee = cc * dd;
@@ -742,7 +740,7 @@ function sgraph()
                 s0 += x;
                 m_dataCorr[j] = s0;
                 s1 += x*x;
-                m_dataCorr[j+1] = s1;
+                m_dataCorr[j + 1] = s1 * nCorr;
             }
 
             m_minCorr = 1e+17;
@@ -924,9 +922,6 @@ function sgraph()
         
         let sOrder = 0.0;
         let sCorr = 0.0;
-        let dMaxCorr = m_maxCorr - m_minCorr;
-        if (dMaxCorr > 0.0001)
-            dMaxCorr = 1.0 / dMaxCorr;
         let yCorr = 0.0;
         let dOrder = 0.0;
         let ih = m_image.height;
@@ -938,7 +933,6 @@ function sgraph()
                     dCorrMax = corr;
                     kCorrMax = k;
                 }
-                
             }
         }
         if (kCorrMax < 0) {
@@ -946,10 +940,6 @@ function sgraph()
             return 0.0;
         }
 
-        if (m_prevMaxCorrPos < 0 && kCorrMax >= 0) {
-            m_prevMaxCorrPos = kCorrMax;
-            m_prevMaxCorr = dCorrMax;
-        }
         colormap(i0, nCorr, i1Min, i1Max, dCorrScale);
         dOrder = getOrder(dCorrMax, i0, nCorr, kCorrMax);
         m_data[index + INDEX_ORDER] = dOrder;
@@ -1077,7 +1067,6 @@ function sgraph()
     }
     myDrawImage = function()
     {
-        sg_main.m_ctx.lineCap = "butt";
         dt5 = new Date();
         dt6 = new Date();
         fillBitmap();
@@ -1112,6 +1101,7 @@ function sgraph()
             m_imHeight = 300;
         sg_main.m_cnv.height = m_imHeight;
         m_imageCanvas = sg_main.m_ctx.getImageData(0, 0, sg_main.m_cnv.width, sg_main.m_cnv.height);
+        sg_main.m_ctx.lineCap = "butt";
         dt2 = new Date();
     }
     set1stOptimizeRanges = function()

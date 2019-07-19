@@ -153,6 +153,7 @@ function sgraphgui() {
             event.clientY >= rect.top + scrollTop && event.clientY <= rect.bottom + scrollTop) {
             m_sgraph.stopOptimization();
             document.getElementById("sg_disable_all").style.display = 'none';
+            document.getElementById("sg_disable_all").style.cursor = "auto";
         }
     }
     function loadFile(filePath) {
@@ -195,8 +196,11 @@ function sgraphgui() {
         if (timeSinceLastClick < 300) {
             let dt = m_lastClickTime.getTime() - m_lastArchiveClickTime.getTime();
             //console.log("dt="+dt);
-            if (dt > 500)
+            if (dt > 500) {
+                document.removeEventListener(m_mousedownEvent, closeDragElement, false); // Needed for Chrome
+                document.removeEventListener(m_mousemoveEvent, elementDrag, false); // Needed for Chrome
                 hideParamsWindow(pid);
+            }
         }
         else {
             m_lastClickTime = new Date();
@@ -277,7 +281,7 @@ function sgraphgui() {
     function closeDragElement() {
         document.removeEventListener(m_mousedownEvent, closeDragElement, false);
         document.removeEventListener(m_mousemoveEvent, elementDrag, false);
-        saveParamsWindowsPos();
+        saveAllParamsWindowsPos();
     }
 
     function zoomSliderInit() {
@@ -650,7 +654,7 @@ function sgraphgui() {
         }
         return z;
     }
-    function saveParamsWindowsPos() {
+    function saveAllParamsWindowsPos() {
         if (localStorage != undefined) {
             for (let i = 1; i <= m_nParamsWindows; i++) {
                 saveParamsWindowPos(i);
@@ -687,7 +691,7 @@ function sgraphgui() {
         }
     }
     function saveParamsAll() { // Do we need it?
-        saveParamsWindowsPos();
+        saveAllParamsWindowsPos();
         saveParamsValues();
         saveParamsTable(-1);
     }
@@ -851,7 +855,7 @@ function sgraphgui() {
             params.style.display = (show && m_sgraph && m_sgraph.m_nData > 0) ? "inline-block" : "none";
             m_showParamWindow[i - 1] = params.style.display != "none";
         }
-        saveParamsWindowsPos();
+        saveAllParamsWindowsPos();
     }
     function drawFavicon() {
         let cnv = document.createElement('canvas');
@@ -1030,9 +1034,9 @@ function sgraphgui() {
         else
             ind = pid;
         let params = getParamsWindowByInd(ind);
+        //saveParamsWindowPos(ind);
         params.style.display = "none";
         m_showParamWindow[ind - 1] = false;
-        saveParamsWindowPos(ind)
     }
     function mouseOnGraphClick(e) {
         let clickX = getMouseX(e);
@@ -1111,6 +1115,7 @@ function sgraphgui() {
         document.getElementById("sg_optimize").innerText = "Optimize";
         m_sgraph.processLoadedData();
         document.getElementById("sg_disable_all").style.display = 'none';
+        document.getElementById("sg_disable_all").style.cursor = "auto";
     }
     function getOptimizeRanges() {
         let ind = 0;
@@ -1147,11 +1152,13 @@ function sgraphgui() {
             if (m_sgraph.startOrStopOptimization()) {
                 document.getElementById("sg_optimize").innerText = "Stop Optimization";
                 document.getElementById("sg_disable_all").style.display = 'block';
+                document.getElementById("sg_disable_all").style.cursor = "progress";
 
             }
             else {
                 document.getElementById("sg_optimize").innerText = "Optimize";
                 document.getElementById("sg_disable_all").style.display = 'none';
+                document.getElementById("sg_disable_all").style.cursor = "auto";
             }
         }
     }
